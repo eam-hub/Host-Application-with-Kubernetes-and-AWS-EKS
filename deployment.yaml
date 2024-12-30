@@ -1,16 +1,35 @@
-apiVersion: v1
-kind: Service
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: rentzone
+  name: rentzone-deployment
   namespace: rentzone
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: nlb
-    service.beta.kubernetes.io/aws-load-balancer-internal: "false"
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-spec:
-  type: LoadBalancer
-  ports:
-    - name: web
-      port: 80
-  selector:
+  labels:
     app: rentzone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rentzone
+  template:
+    metadata:
+      labels:
+        app: rentzone
+    spec:
+      serviceAccountName: rentzone-service-account
+      volumes:
+      - name: secrets-store-inline
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: "rentzone-secret"
+      containers:
+      - name: rentzone
+        image: 499930062720.dkr.ecr.us-east-1.amazonaws.com/rentzone4:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: secrets-store-inline
+          mountPath: "/mnt/secrets-store"
+          readOnly: true
