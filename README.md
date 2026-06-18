@@ -171,6 +171,6 @@ Before you begin, ensure that the following tools and accounts are set up:
 
 ## Conclusion
 
-After completing the steps outlined in this guide, you will have successfully deployed a dynamic application using Kubernetes on AWS EKS. The infrastructure is highly available, secure, and scalable, with the application accessible via a domain name with encrypted traffic.
+Successfully deployed a dynamic application using Kubernetes on AWS EKS. The infrastructure is highly available, secure, and scalable.
 
 
