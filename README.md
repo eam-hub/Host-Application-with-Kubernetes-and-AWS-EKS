@@ -222,9 +222,9 @@ Kubernetes manifests (provided by the project) were used to deploy the applicati
 
 These included:
 
-* Deployment file → defines application pods
-* Service file → exposes application via load balancer
-* Secrets configuration → integrates AWS Secrets Manager
+* Deployment file (deployment.yaml) → defines application pods
+* Service file (service.yaml) → exposes application via load balancer
+* Secrets configuration (secrets-provider-class.yaml) → Accesses AWS Secrets Manager
 
 The manifests were applied to the cluster using Kubernetes CLI.
 
