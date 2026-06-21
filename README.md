@@ -9,6 +9,7 @@ This guide outlines the process for hosting a dynamic application using Kubernet
 Before you begin, ensure that the following tools and accounts are set up:
 
 - **GitHub account**
+- **Private GitHub Repository**
 - **Key pairs** to clone GitHub repositories to your local machine
 - **Git** (configured with your username and email)
 - **Visual Studio Code** (VS Code) installed
