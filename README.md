@@ -1,6 +1,6 @@
 # Host a Dynamic Application on AWS using Kubernetes (EKS)
 
-This guide outlines the process for hosting a dynamic application using Kubernetes on AWS Elastic Kubernetes Service (EKS). The infrastructure will be designed using a 3-tier VPC. 
+This project outlines the process for hosting a dynamic application using Kubernetes on AWS Elastic Kubernetes Service (EKS). The infrastructure will be designed using a 3-tier VPC. 
 
 ---
 
