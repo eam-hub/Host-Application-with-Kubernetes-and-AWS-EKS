@@ -60,7 +60,7 @@ A custom Virtual Private Cloud (VPC) was created to isolate and secure all resou
 
 ## 2. Security Groups
 
-Security groups were configured to control traffic between resources:
+3 security groups were configured to control traffic between resources:
 
 ### EC2 Instance Connect Endpoint
 
