@@ -113,12 +113,16 @@ Before you begin, ensure that the following tools and accounts are set up:
     ```
 
 2. **Install kubectl**:
+      - Command-line tool for interacting with Kubernetes clusters.
     ```bash
     choco install kubernetes-cli
     ```
 
-3. **Install eksctl** (Download and unzip, then add it to the system path).
-4. **Install Helm**:
+4. **Install eksctl** (Download and unzip, then add it to the system path).
+      - Command-line tool for creating, managing, and operating Amazon EKS (Elastic Kubernetes Service) clusters.
+        
+5. **Install Helm**:
+      - Packet manager for Kubernetes
     ```bash
     choco install kubernetes-helm
     ```
