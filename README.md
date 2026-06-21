@@ -83,7 +83,7 @@ A custom Virtual Private Cloud (VPC) was created to isolate and secure all resou
 
 Instead of a traditional bastion host, an EC2 Instance Connect Endpoint (EICE) was used:
 
-* Deployed in a private subnet
+* Deployed in private app subnet
 * Provides secure SSH access to private EC2 instances
 * Eliminates the need for public-facing bastion hosts
 
