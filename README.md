@@ -164,7 +164,7 @@ ssh-keygen -t rsa -b 2048
 
 ## 11. Docker Image Build & Deployment
 
-A Docker image was created for the application.
+A Docker image was created from the dockerfile.
 
 ### Build Image:
 
