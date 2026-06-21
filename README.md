@@ -1,6 +1,6 @@
 # Host-Application-with-Kubernetes-and-AWS-EKS
 
-This guide outlines the process for hosting a dynamic application using Kubernetes on AWS Elastic Kubernetes Service (EKS). The infrastructure will be designed using a 3-tier Virtual Private Cloud (VPC) architecture with automated deployments, database migration, and proper security configuration.
+This guide outlines the process for hosting a dynamic application using Kubernetes on AWS Elastic Kubernetes Service (EKS). The infrastructure will be designed using a 3-tier VPC. 
 
 ---
 
