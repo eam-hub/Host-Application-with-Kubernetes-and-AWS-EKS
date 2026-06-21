@@ -1,178 +1,249 @@
-# Host-Application-with-Kubernetes-and-AWS-EKS
+# Host a Dynamic Application on AWS using Kubernetes (EKS)
 
 This guide outlines the process for hosting a dynamic application using Kubernetes on AWS Elastic Kubernetes Service (EKS). The infrastructure will be designed using a 3-tier VPC. 
 
 ---
 
+## Architecture Overview
+
+The application is deployed using the following AWS services:
+
+* Amazon EKS (Kubernetes cluster)
+* Amazon EC2 (migration server + compute resources)
+* Amazon RDS (MySQL database)
+* Amazon ECR (container registry)
+* AWS Secrets Manager (secure credentials storage)
+* Amazon VPC (custom networking)
+* AWS Route 53 (DNS management)
+* Application Load Balancer / Network Load Balancer (traffic routing)
+
+---
+
 ## Prerequisites
 
-Before you begin, ensure that the following tools and accounts are set up:
+Before starting, you should have:
 
-- **AWS account**
-- **GitHub account**
-- **Private GitHub Repository**
-- **Key pairs** to clone GitHub repositories to your local machine
-- **Git** (configured with your username and email)
-- **Visual Studio Code** (VS Code) installed
-- **Docker** and **Docker Hub account**
-- **Flyway** (for database migration)
-- **AWS CLI** installed and configured to interact with AWS services
+* GitHub account (private repository access)
+* Git installed locally
+* Visual Studio Code
+* Docker installed + Docker Hub account
+* AWS CLI configured
+* SSH key pair for GitHub authentication
+* Basic understanding of containers and Kubernetes
 
 ---
 
-## AWS Infrastructure Setup (3-Tier VPC)
+## 1. VPC & Networking Setup
 
-1. **Create a VPC** in the AWS Console.
-2. **Enable DNS hostname** in the VPC to assign memorable hostnames to resources instead of IP addresses.
-3. **Set up an Internet Gateway** to allow resources in the VPC to access the internet.
-4. **Create public subnets** (1 per Availability Zone), including resources like Bastion Host, NAT Gateway, and Application Load Balancer (ALB). Enable auto-assigning public IPv4 addresses.
-5. **Create private subnets** (2 per Availability Zone) for web servers and database instances.
-6. **Create route tables**:
-   - Public route table: Connect to the Internet Gateway and associate with public subnets.
-   - Private route tables: Connect to the NAT Gateway for internet access.
-7. **Set up a NAT Gateway** in a public subnet (optional for cost-saving, can be placed in one public subnet).
-8. **Create Security Groups**:
-   - EC2 instance connect endpoint
-   - Database migration server
-   - RDS database server
-9. **Launch EC2 instance** for database migration (with necessary IAM role).
-10. **Create an RDS instance** with the relevant database subnet group and associate with the appropriate security group.
-11. **Set up Route 53** for domain name registration, SSL certificate, and create a record set for your application.
+A custom Virtual Private Cloud (VPC) was created to isolate and secure all resources.
 
----
+### Network Design:
 
-## Docker File and Image Build
+* 2 Availability Zones
+* 6 Subnets total:
 
-1. **Create a GitHub repository** for your Docker files and clone it to your local machine.
-2. **Write a Dockerfile** for the application, specifying the build arguments.
-3. **Build the Docker image**:
-    ```bash
-    docker build \
-    --build-arg PERSONAL_ACCESS_TOKEN=<token> \
-    --build-arg GITHUB_USERNAME=<username> \
-    --build-arg REPOSITORY_NAME=<repo-name> \
-    --build-arg WEB_FILE_ZIP=<web-file-zip> \
-    --build-arg WEB_FILE_UNZIP=<web-file-unzip> \
-    --build-arg DOMAIN_NAME=<domain-name> \
-    --build-arg RDS_ENDPOINT=<rds-endpoint> \
-    --build-arg RDS_DB_NAME=<db-name> \
-    --build-arg RDS_MASTER_USERNAME=<master-username> \
-    --build-arg RDS_DB_PASSWORD=<db-password> \
-    -t <image-tag> .
-    ```
+  * 2 Public subnets
+  * 2 Private application subnets
+  * 2 Private database subnets
 
-4. **Make the script executable** (Windows users):
-    ```bash
-    Set-ExecutionPolicy -ExecutionPolicy Unrestricted
-    ```
+### Core Components:
 
-5. **Build the image**:
-    - Right-click the file in Visual Studio Code and choose "Open in Integrated Terminal."
-    - Run the build command:
-    ```bash
-    .\<name-of-file>
-    ```
+* Internet Gateway attached to VPC
+* NAT Gateway deployed in public subnet with Elastic IP
+* Route tables:
+
+  * Public subnets → Internet Gateway
+  * Private subnets → NAT Gateway
+* DNS hostnames enabled for internal resolution
 
 ---
 
-## Push Docker Image to ECR
+## 2. Security Groups
 
-1. **Create an IAM user** with admin access for programmatic access to manage AWS resources (note the access keys).
-2. **Authenticate** with AWS CLI:
-    ```bash
-    aws configure
-    ```
-3. **Create an ECR repository**:
-    ```bash
-    aws ecr create-repository --repository-name <repository-name> --region <region>
-    ```
-4. **Push the Docker image** to ECR:
-    ```bash
-    docker tag <image-tag> <repository-uri>
-    aws ecr get-login-password | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com
-    docker push <repository-uri>
-    ```
+Security groups were configured to control traffic between resources:
 
----
+### EC2 Instance Connect Endpoint
 
-## Migrate SQL Data into RDS
+* Inbound: default
+* Outbound: SSH access to VPC CIDR
 
-1. **Create an S3 bucket** and upload the SQL migration file.
-2. **Create an IAM role** with S3 access.
-3. **Launch an EC2 instance** in the private subnet and assign the IAM role.
-4. **Use Flyway** to migrate the SQL script from S3 to the RDS instance.
-5. **Terminate the EC2 instance** once migration is complete.
+### Database Migration EC2
+
+* Inbound: SSH from EICE security group
+* Outbound: default
+
+### Amazon RDS (MySQL)
+
+* Inbound: MySQL/Aurora from migration EC2 security group
+* Outbound: default
 
 ---
 
-## Install kubectl, eksctl, and Helm
+## 3. Secure EC2 Access (No Bastion Host)
 
-1. **Install Chocolatey** (Windows package manager):
-    ```bash
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-    ```
+Instead of a traditional bastion host, an EC2 Instance Connect Endpoint (EICE) was used:
 
-2. **Install kubectl**:
-      - Command-line tool for interacting with Kubernetes clusters.
-    ```bash
-    choco install kubernetes-cli
-    ```
-
-4. **Install eksctl** (Download and unzip, then add it to the system path).
-      - Command-line tool for creating, managing, and operating Amazon EKS (Elastic Kubernetes Service) clusters.
-        
-5. **Install Helm**:
-      - Packet manager for Kubernetes
-    ```bash
-    choco install kubernetes-helm
-    ```
+* Deployed in a private subnet
+* Provides secure SSH access to private EC2 instances
+* Eliminates the need for public-facing bastion hosts
 
 ---
 
-## Add Environment Variables to AWS Secrets Manager
+## 4. S3 Storage
 
-1. **Create a secret** in AWS Secrets Manager for the Docker build arguments.
-2. **Create an IAM policy** to allow EKS to access the secrets.
-
----
-
-## Set Up EKS Cluster
-
-1. **Create an IAM role** for the EKS cluster.
-2. **Create an EKS cluster** in the AWS Console.
-3. **Modify the RDS security group** to allow traffic from the EKS cluster security group.
-4. **Create worker nodes** for the EKS cluster with the following policies:
-    - `AmazonEKSWorkerNodePolicy`
-    - `AmazonEC2ContainerRegistryPullOnly`
-    - `AmazonEKS_CNI_Policy`
+* An S3 bucket was created to store application source code
+* EC2 instances retrieve application files from S3 during setup
 
 ---
 
-## Kubernetes Manifests
+## 5. IAM Configuration
 
-1. **Create a GitHub repository** for Kubernetes manifests and clone it to your local machine.
-2. **Create three YAML manifest files**:
-   - **Secrets file**: Mount AWS secrets to EKS.
-   - **Deployment file**: Manage scaling and deployment of the application.
-   - **Service file**: Expose the application using a load balancer.
+IAM roles were created for EC2 instances to securely access AWS services.
+
+### Policies included:
+
+* S3 read access (ListBucket, GetObject)
+* Secrets Manager access (GetSecretValue, DescribeSecret)
+
+These policies were attached to an IAM role assigned to EC2 instances.
 
 ---
 
-## EKS Deployment
+## 6. Domain & SSL Setup
 
-1. **Configure kubectl** with the correct AWS region, EKS cluster name, and AWS account ID.
-2. **Create a namespace** in the EKS cluster.
-3. **Install the secret store CSI driver** on EKS to allow it to access secrets stored in AWS Secrets Manager.
-4. **Associate IAM OIDC provider** with the EKS cluster.
-5. **Create IAM service account** for EKS to access AWS resources.
-6. **Apply the manifest files**:
-    - Apply the `secrets.yaml` file.
-    - Apply the `deployment.yaml` file.
-    - Apply the `service.yaml` file.
+* Domain registered using Route 53
+* SSL certificate created using AWS Certificate Manager
+* Certificate validated for HTTPS encryption
 
-7. **Configure the Load Balancer** and apply a TLS listener for secure communication.
-8. **Create a Route 53 A record set** to map the application’s IP address to a domain name.
+---
 
+## 7. Database Layer (RDS + Secrets Manager)
+
+### Database Setup
+
+* DB subnet group created (private DB subnets only)
+* MySQL database deployed using Amazon RDS
+
+### Secrets Management
+
+* Database credentials stored in AWS Secrets Manager
+* Application retrieves credentials at runtime (no hardcoding)
+
+---
+
+## 8. Database Migration Server
+
+* Temporary EC2 instance launched for database migrations
+* IAM role attached for S3 + Secrets Manager access
+* Migration scripts executed using Flyway via user data
+
+---
+
+## 9. AWS CLI Access
+
+An IAM user was created with programmatic access:
+
+```bash id="v7g0u9"
+aws configure --profile <username>
+```
+
+---
+
+## 10. Git & SSH Setup
+
+SSH key generation:
+
+```bash id="k2j8fd"
+ssh-keygen -t rsa -b 2048
+```
+
+* Public key added to GitHub
+* Private repository cloned using SSH
+
+---
+
+## 11. Docker Image Build & Deployment
+
+A Docker image was created for the application.
+
+### Build Image:
+
+```bash id="w9x2lm"
+docker build \
+--build-arg PERSONAL_ACCESS_TOKEN=<token> \
+--build-arg GITHUB_USERNAME=<username> \
+--build-arg REPOSITORY_NAME=<repo> \
+--build-arg WEB_FILE_ZIP=<file.zip> \
+--build-arg DOMAIN_NAME=<domain> \
+--build-arg RDS_ENDPOINT=<endpoint> \
+--build-arg RDS_DB_NAME=<db-name> \
+--build-arg RDS_MASTER_USERNAME=<username> \
+--build-arg RDS_DB_PASSWORD=<password> \
+-t <image-tag> .
+```
+
+### Push to Amazon ECR:
+
+```bash id="9qz3kt"
+aws ecr create-repository --repository-name <repo> --region <region>
+
+aws ecr get-login-password | docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
+
+docker tag <image-tag> <repository-uri>
+docker push <repository-uri>
+```
+
+---
+
+## 12. Amazon EKS Cluster Setup
+
+The application was deployed using Amazon EKS.
+
+### IAM Roles:
+
+* EKS Cluster Role (control plane permissions)
+* Worker Node Role:
+
+  * EKSWorkerNodePolicy
+  * EC2ContainerRegistryReadOnly
+  * EKS_CNI_Policy
+
+### Cluster Setup:
+
+* EKS cluster created
+* Managed node group configured
+* IAM user access granted to cluster
+
+---
+
+## 13. Kubernetes Deployment
+
+Kubernetes manifests (provided by the project) were used to deploy the application onto the EKS cluster.
+
+These included:
+
+* Deployment file → defines application pods
+* Service file → exposes application via load balancer
+* Secrets configuration → integrates AWS Secrets Manager
+
+The manifests were applied to the cluster using Kubernetes CLI.
+
+---
+
+## 14. Load Balancer & Exposure
+
+Once the service was deployed:
+
+* Kubernetes automatically provisioned a Network Load Balancer
+* This exposed the application to the internet
+
+---
+
+## 15. DNS Configuration
+
+* Load balancer DNS was retrieved after deployment
+* A Route 53 record set was created pointing to the NLB
+* This connected the application to the custom domain
 ---
 
 ## Conclusion
