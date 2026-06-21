@@ -98,7 +98,7 @@ Instead of a traditional bastion host, an EC2 Instance Connect Endpoint (EICE) w
 
 ## 5. IAM Configuration
 
-IAM roles were created for EC2 instances to securely access AWS services.
+IAM roles were created for EC2 instances to securely access AWS services, allowing them to retrieve application code from S3 and database credentials from AWS Secrets Manager.
 
 ### Policies included:
 
