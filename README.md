@@ -8,6 +8,7 @@ This guide outlines the process for hosting a dynamic application using Kubernet
 
 Before you begin, ensure that the following tools and accounts are set up:
 
+- **AWS account**
 - **GitHub account**
 - **Private GitHub Repository**
 - **Key pairs** to clone GitHub repositories to your local machine
