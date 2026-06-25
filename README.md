@@ -225,8 +225,10 @@ These included:
 * Deployment file (deployment.yaml) → defines application pods
 * Service file (service.yaml) → exposes application via load balancer
 * Secrets configuration (secrets-provider-class.yaml) → Accesses AWS Secrets Manager
-
+* run deployment script (deployment-script.ps1)
+  
 The manifests were applied to the cluster using Kubernetes CLI.
+
 
 ---
 
